@@ -241,7 +241,7 @@
       <button onclick="resetProgress()">Reset</button>
       <div id="indicator">Card 0 / 0</div>
       <div id="shortcuts">
-        <small>Space: flip &nbsp;, / . or ← / →: prev/next &nbsp;C/W: correct/wrong &nbsp;R: reset</small>
+        <small>Space: flip &nbsp;, / . or ← / →: prev/next &nbsp;←: wrong &nbsp;→: correct</small>
       </div>
       <div class="mobile-grid" id="mobileProgress">
         <h4 style="margin:6px 0 6px 0; font-size:14px;">Progress</h4>
@@ -787,7 +787,12 @@
           showCard();
         };
         if (grid) grid.appendChild(div);
-        if (mobileGrid) mobileGrid.appendChild(div.cloneNode(true));
+        if (mobileGrid) {
+          const mobileDiv = div.cloneNode(true);
+          // reattach handler because cloneNode doesn't copy listeners
+          mobileDiv.onclick = div.onclick;
+          mobileGrid.appendChild(mobileDiv);
+        }
       });
       updateGrid();
     }
@@ -852,34 +857,16 @@
           e.preventDefault();
           break;
         case 'ArrowRight':
-          nextCard();
+          markAnswer(true);
           break;
         case 'ArrowLeft':
-          prevCard();
+          markAnswer(false);
           break;
         case ',':
           prevCard();
           break;
         case '.':
           nextCard();
-          break;
-        case '<':
-          prevCard();
-          break;
-        case '>':
-          nextCard();
-          break;
-        case 'c':
-        case 'C':
-          markAnswer(true);
-          break;
-        case 'w':
-        case 'W':
-          markAnswer(false);
-          break;
-        case 'r':
-        case 'R':
-          if (confirm('Clear all progress?')) resetProgress();
           break;
       }
     });
