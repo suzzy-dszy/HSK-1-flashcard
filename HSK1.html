@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HSK Flashcards</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+
+    #main {
+      flex: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 18;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .card {
+      width: 300px;
+      height: 200px;
+      perspective: 1000px;
+      position: relative;
+      z-index: 20;
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      position: relative;
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #333;
+      border-radius: 10px;
+      font-size: 40px;
+      background: white;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      font-size: 18px;
+      flex-direction: column;
+      padding: 10px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 12px 18px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #sidebar {
+      flex: 2;
+      overflow-y: scroll;
+      padding: 10px;
+      border-left: 2px solid #ddd;
+      z-index: 2;
+      background: #fff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+    }
+
+    .grid div {
+      padding: 8px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 5px;
+      background: #eee;
+    }
+
+    .mobile-grid {
+      display: none;
+      margin-top: 8px;
+    }
+
+    #toggleMobileProgress {
+      display: none;
+    }
+
+    .answer-buttons {
+      margin-top: 14px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    #shortcuts {
+      margin-top: 6px;
+      font-size: 16px;
+      color: #222;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* Card indicator */
+    #indicator {
+      margin-top: 6px;
+      font-size: 16px;
+      color: #111;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-left: 8px;
+    }
+
+    /* Responsive/mobile adjustments */
+    @media (max-width: 700px) {
+      body {
+        flex-direction: column;
+        height: auto;
+      }
+
+      #main {
+        flex: none;
+        padding: 20px;
+      }
+
+      #sidebar {
+        display: none;
+      }
+
+      /* mobile progress panel: shown only when toggled open */
+      .mobile-grid {
+        display: none;
+      }
+
+      .mobile-grid.open {
+        display: block;
+        max-height: 220px;
+        overflow: auto;
+        width: 100%;
+      }
+
+      /* toggle button visible only on small screens */
+      #toggleMobileProgress {
+        display: inline-block;
+      }
+
+      #controls {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+
+      .card {
+        width: min(92vw, 420px);
+        height: calc(min(92vw, 420px) * 0.62);
+      }
+
+      .card-front,
+      .card-back {
+        font-size: 30px;
+      }
+
+      .card-back {
+        font-size: 16px;
+      }
+
+      button {
+        margin: 6px;
+        padding: 10px 12px;
+        font-size: 16px;
+      }
+
+      #shortcuts {
+        font-size: 14px;
+      }
+
+      #indicator {
+        font-size: 14px;
+      }
+
+      .grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 4px;
+      }
+    }
+
+    .correct {
+      background: #4CAF50 !important;
+      color: white;
+    }
+
+    .wrong {
+      background: #f44336 !important;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="main">
+
+    <div id="controls">
+      <button onclick="prevCard()">&lt;</button>
+      <button onclick="nextCard()">&gt;</button>
+      <button onclick="shuffleToggle()">Shuffle/Unshuffle</button>
+      <button onclick="resetProgress()">Reset</button>
+      <div id="indicator">Card 0 / 0</div>
+      <div id="shortcuts">
+        <small>Space: flip &nbsp;, / . or ← / →: prev/next &nbsp;C/W: correct/wrong &nbsp;R: reset</small>
+      </div>
+      <div class="mobile-grid" id="mobileProgress">
+        <h4 style="margin:6px 0 6px 0; font-size:14px;">Progress</h4>
+        <div class="grid" id="mobileProgressGrid"></div>
+      </div>
+      <button id="toggleMobileProgress" onclick="toggleMobileProgress()">Progress</button>
+    </div>
+
+    <div class="card" onclick="flipCard()">
+      <div class="card-inner">
+        <div class="card-front" id="cardFront"></div>
+        <div class="card-back" id="cardBack"></div>
+      </div>
+    </div>
+
+    <div class="answer-buttons">
+      <button onclick="markAnswer(true)">Correct</button>
+      <button onclick="markAnswer(false)">Wrong</button>
+    </div>
+
+  </div>
+
+  <div id="sidebar">
+    <h3>Progress</h3>
+    <div class="grid" id="progressGrid"></div>
+  </div>
+
+  <script>
+
+    // ==========================
+    // MODULAR DATA STRUCTURE
+    // Add HSK2 later by adding another array
+    // ==========================
+
+    const HSK_DATA = {
+      1: [
+        { hanzi: "爱", pinyin: "ài", meaning: "to love", pos: "verb" },
+        { hanzi: "吧", pinyin: "ba", meaning: "suggestion particle", pos: "particle" },
+        { hanzi: "八", pinyin: "bā", meaning: "eight", pos: "number" },
+        { hanzi: "爸爸", pinyin: "bàba", meaning: "father / dad", pos: "noun" },
+        { hanzi: "百", pinyin: "bǎi", meaning: "hundred", pos: "number" },
+        { hanzi: "白天", pinyin: "báitiān", meaning: "daytime", pos: "noun" },
+        { hanzi: "半", pinyin: "bàn", meaning: "half", pos: "number" },
+        { hanzi: "包子", pinyin: "bāozi", meaning: "steamed bun", pos: "noun" },
+        { hanzi: "杯子", pinyin: "bēizi", meaning: "cup", pos: "noun" },
+        { hanzi: "本", pinyin: "běn", meaning: "measure word for books", pos: "measure word" },
+
+        // FULL LIST CONTINUES...
+        // To avoid truncation in chat, the rest of the 300 entries
+        // are generated dynamically below from the raw list.
+
+      ]
+    };
+
+
+    // ==========================
+    // AUTO-POPULATE REMAINING 290 WORDS
+    // ==========================
+
+    const RAW_LIST = `
+  1. 爱 (ài) v - to love
+  2. 吧 (ba) part - modal particle (suggestion)
+  3. 八 (bā) num - eight
+  4. 爸爸 (bàba) n - dad
+  5. 百 (bǎi) num - hundred
+  6. 白天 (báitiān) n - daytime
+  7. 半 (bàn) num/adv - half
+  8. 包子 (bāozi) n - steamed bun
+  9. 杯子 (bēizi) n - cup, glass
+  10. 本 (běn) m - (measure for books)
+  11. 边 (biān) n/suf - side
+  12. 病 (bìng) n/v - illness; to fall ill
+  13. 不 (bù) adv - not
+  14. 不客气 (búkèqì) v - you're welcome
+  15. 不要 (búyào) adv - don't
+  16. 菜 (cài) n - dish, vegetable
+  17. 茶 (chá) n - tea
+  18. 唱 (chàng) v - to sing
+  19. 超市 (chāoshì) n - supermarket
+  20. 车 (chē) n - vehicle
+  21. 吃 (chī) v - to eat
+  22. 穿 (chuān) v - to wear
+  23. 出租车 (chūzūchē) n - taxi
+  24. 大 (dà) adj - big
+  25. 打电话 (dǎ diànhuà) v - to make a phone call
+  26. 大家 (dàjiā) pron - everyone
+  27. 到 (dào) v - to arrive
+  28. 大学 (dàxué) n - university
+  29. 大学生 (dàxuéshēng) n - university student
+  30. 的 (de) part - possessive/attributive particle
+  31. 第 (dì) pref - (prefix for ordinal numbers)
+  32. 店 (diàn) n - shop
+  33. 点 (diǎn) m/adv - o'clock; a bit
+  34. 电话 (diànhuà) n - telephone
+  35. 电脑 (diànnǎo) n - computer
+  36. 电视 (diànshì) n - television
+  37. 电影 (diànyǐng) n - movie
+  38. 电影院 (diànyǐngyuàn) n - cinema
+  39. 弟弟 (dìdi) n - younger brother
+  40. 东西 (dōngxi) n - thing
+  41. 都 (dōu) adv - all, both
+  42. 读 (dú) v - to read
+  43. 对 (duì) adj/v - correct; toward
+  44. 对不起 (duìbuqǐ) v - sorry
+  45. 多 (duō) adj/pron - many, much
+  46. 多少 (duōshǎo) pron - how many, how much
+  47. 读书 (dúshū) v - to study, to read a book
+  48. 二 (èr) num - two
+  49. 儿子 (érzi) n - son
+  50. 饭 (fàn) n - meal, rice
+  51. 饭店 (fàndiàn) n - restaurant, hotel
+  52. 房间 (fángjiān) n - room
+  53. 非常 (fēicháng) adv - very
+  54. 飞机 (fēijī) n - airplane
+  55. 分 (fēn) m/v/n - minute; to divide
+  56. 分钟 (fēnzhōng) m - minute
+  57. 高兴 (gāoxìng) adj - happy
+  58. 个 (gè) m - general measure word
+  59. 歌 (gē) n - song
+  60. 哥哥 (gēge) n - older brother
+  61. 给 (gěi) v/prep - to give; for
+  62. 公司 (gōngsī) n - company
+  63. 工作 (gōngzuò) v/n - to work; job
+  64. 狗 (gǒu) n - dog
+  65. 贵 (guì) adj - expensive
+  66. 国 (guó) n - country
+  67. 还 (hái) adv - still, yet
+  68. 孩子 (háizi) n - child
+  69. 汉语 (Hànyǔ) n - Chinese language
+  70. 汉字 (Hànzì) n - Chinese character
+  71. 号 (hào) n/m - date; number; size
+  72. 好 (hǎo) adj - good
+  73. 好吃 (hǎochī) adj - delicious
+  74. 好看 (hǎokàn) adj - good-looking
+  75. 好听 (hǎotīng) adj - pleasant to hear
+  76. 好玩儿 (hǎowánr) adj - fun
+  77. 和 (hé) conj/prep - and; with
+  78. 喝 (hē) v - to drink
+  79. 很 (hěn) adv - very
+  80. 后 (hòu) n - back, behind
+  81. 回 (huí) v - to return
+  82. 会 (huì) v - can, to be able to
+  83. 火车 (huǒchē) n - train
+  84. 几 (jǐ) pron/num - how many; a few
+  85. 家 (jiā) n/m - family; home
+  86. 见 (jiàn) v - to see, to meet
+  87. 件 (jiàn) m - measure for items/clothing
+  88. 叫 (jiào) v - to be called, to call
+  89. 饺子 (jiǎozi) n - dumpling
+  90. 家人 (jiārén) n - family member
+  91. 鸡蛋 (jīdàn) n - egg
+  92. 姐姐 (jiějie) n - older sister
+  93. 今年 (jīnnián) n - this year
+  94. 今天 (jīntiān) n - today
+  95. 九 (jiǔ) num - nine
+  96. 觉得 (juéde) v - to feel, to think
+  97. 开 (kāi) v - to drive, to open
+  98. 开车 (kāichē) v - to drive a car
+  99. 看 (kàn) v - to see, to watch
+  100. 看病 (kànbìng) v - to see a doctor
+  101. 看见 (kànjiàn) v - to see
+  102. 课 (kè) n - class, lesson
+  103. 可以 (kěyǐ) v/adj - can; okay
+  104. 口 (kǒu) n/m - mouth; measure for people
+  105. 块 (kuài) m - piece; yuan
+  106. 来 (lái) v - to come
+  107. 老师 (lǎoshī) n - teacher
+  108. 了 (le) part - completed action marker
+  109. 冷 (lěng) adj - cold
+  110. 里 (lǐ) n - inside
+  111. 两 (liǎng) num - two (before measure word)
+  112. 零 (líng) num - zero
+  113. 六 (liù) num - six
+  114. 吗 (ma) part - question particle
+  115. 卖 (mài) v - to sell
+  116. 买 (mǎi) v - to buy
+  117. 妈妈 (māma) n - mom
+  118. 忙 (máng) adj/v - busy; to hurry
+  119. 猫 (māo) n - cat
+  120. 没关系 (méi guānxi) phrase - it doesn't matter
+  121. 妹妹 (mèimei) n - younger sister
+  122. 没事 (méishì) v - it's nothing
+  123. 没(有) (méi(yǒu)) v/adv - not have; did not
+  124. 们 (men) suf - plural suffix
+  125. 面包 (miànbāo) n - bread
+  126. 面条儿 (miàntiáor) n - noodles
+  127. 米饭 (mǐfàn) n - cooked rice
+  128. 明年 (míngnián) n - next year
+  129. 明天 (míngtiān) n - tomorrow
+  130. 名字 (míngzi) n - name
+  131. 那 (nà) pron - that
+  132. 哪 (nǎ) pron - which
+  133. 那边 (nàbiān) pron - over there
+  134. 那个 (nàge) pron - that one
+  135. 哪个 (nǎge) pron - which one
+  136. 那里 (nàlǐ) pron - there
+  137. 哪里 (nǎlǐ) pron - where
+  138. 男 (nán) adj - male
+  139. 男朋友 (nánpéngyou) n - boyfriend
+  140. 那儿 (nàr) pron - there
+  141. 哪儿 (nǎr) pron - where
+  142. 那些 (nàxiē) pron - those
+  143. 哪些 (nǎxiē) pron - which ones
+  144. 呢 (ne) part - particle for questions/emphasis
+  145. 能 (néng) v - can, to be able to
+  146. 你 (nǐ) pron - you (singular)
+  147. 你好 (nǐ hǎo) phrase - hello
+  148. 年 (nián) n/m - year
+  149. 你们 (nǐmen) pron - you (plural)
+  150. 您 (nín) pron - you (polite)
+  151. 牛奶 (niúnǎi) n - milk
+  152. 女 (nǚ) adj - female
+  153. 女儿 (nǚ'ér) n - daughter
+  154. 女朋友 (nǚpéngyou) n - girlfriend
+  155. 女士 (nǚshì) n - lady, Ms.
+  156. 朋友 (péngyou) n - friend
+  157. 便宜 (piányi) adj - cheap
+  158. 漂亮 (piàoliang) adj - beautiful
+  159. 苹果 (píngguǒ) n - apple
+  160. 七 (qī) num - seven
+  161. 前 (qián) n - front, before
+  162. 钱 (qián) n - money
+  163. 千 (qiān) num - thousand
+  164. 起床 (qǐchuáng) v - to get up
+  165. 请 (qǐng) v - please, to invite
+  166. 请问 (qǐngwèn) v - excuse me, may I ask
+  167. 去 (qù) v - to go
+  168. 去年 (qùnián) n - last year
+  169. 热 (rè) adj - hot
+  170. 人 (rén) n - person
+  171. 认识 (rènshi) v - to know (someone)
+  172. 日 (rì) n/m - sun, day; date
+  173. 三 (sān) num - three
+  174. 上 (shàng) n/v - above; to go up
+  175. 上班 (shàngbān) v - to go to work
+  176. 商店 (shāngdiàn) n - shop, store
+  177. 上课 (shàngkè) v - to attend class
+  178. 上午 (shàngwǔ) n - morning
+  179. 上学 (shàngxué) v - to attend school
+  180. 少 (shǎo) adj/v - few, little; to lack
+  181. 谁 (shéi/shuí) pron - who
+  182. 生病 (shēngbìng) v - to get sick
+  183. 什么 (shénme) pron - what
+  184. 十 (shí) num - ten
+  185. 事 (shì) n - matter, thing
+  186. 是 (shì) v - to be
+  187. 时候 (shíhou) n - time, moment
+  188. 时间 (shíjiān) n - time
+  189. 手机 (shǒujī) n - mobile phone
+  190. 书 (shū) n - book
+  191. 书店 (shūdiàn) n - bookstore
+  192. 睡 (shuì) v - to sleep
+  193. 水 (shuǐ) n - water
+  194. 水果 (shuǐguǒ) n - fruit
+  195. 睡觉 (shuìjiào) v - to sleep
+  196. 说 (shuō) v - to speak
+  197. 说话 (shuōhuà) v - to talk
+  198. 四 (sì) num - four
+  199. 岁 (suì) m - years old
+  200. 他 (tā) pron - he
+  201. 它 (tā) pron - it
+  202. 她 (tā) pron - she
+  203. 太 (tài) adv - too, extremely
+  204. 他们 (tāmen) pron - they (male/mixed)
+  205. 它们 (tāmen) pron - they (animals/objects)
+  206. 她们 (tāmen) pron - they (female)
+  207. 天 (tiān) n/m - day; sky
+  208. 天气 (tiānqì) n - weather
+  209. 听 (tīng) v - to listen
+  210. 听见 (tīngjiàn) v - to hear
+  211. 同学 (tóngxué) n - classmate
+  212. 外 (wài) n - outside
+  213. 外边 (wàibian) n - outside
+  214. 玩 (wán) v - to play, to have fun
+  215. 晚 (wǎn) adj - late
+  216. 晚饭 (wǎnfàn) n - dinner
+  217. 晚上 (wǎnshang) n - evening
+  218. 喂 (wèi) int - hello (on phone)
+  219. 问 (wèn) v - to ask
+  220. 问题 (wèntí) n - question, problem
+  221. 我 (wǒ) pron - I
+  222. 我们 (wǒmen) pron - we
+  223. 五 (wǔ) num - five
+  224. 午饭 (wǔfàn) n - lunch
+  225. 下 (xià) n/v/m - below; to go down
+  226. 下雨 (xiàyǔ) v - to rain
+  227. 下班 (xiàbān) v - to get off work
+  228. 下课 (xiàkè) v - class is over
+  229. 想 (xiǎng) v - to want, to think
+  230. 先生 (xiānsheng) n - Mr., husband
+  231. 现在 (xiànzài) n - now
+  232. 小 (xiǎo) adj - small
+  233. 小朋友 (xiǎopéngyǒu) n - child
+  234. 小时 (xiǎoshí) n - hour
+  235. 小学 (xiǎoxué) n - elementary school
+  236. 小学生 (xiǎoxuésheng) n - elementary student
+  237. 下午 (xiàwǔ) n - afternoon
+  238. 写 (xiě) v - to write
+  239. 些 (xiē) m - some, several
+  240. 谢谢 (xièxie) v - to thank
+  241. 喜欢 (xǐhuan) v - to like
+  242. 新 (xīn) adj - new
+  243. 星期 (xīngqī) n - week
+  244. 星期日 (xīngqīrì) n - Sunday
+  245. 星期天 (xīngqītiān) n - Sunday
+  246. 休息 (xiūxi) v - to rest
+  247. 学 (xué) v - to learn, to study
+  248. 雪 (xuě) n - snow
+  249. 学生 (xuésheng) n - student
+  250. 学习 (xuéxí) v - to study
+  251. 学校 (xuéxiào) n - school
+  252. 要 (yào) v - to want
+  253. 也 (yě) adv - also
+  254. 一 (yī) num - one
+  255. 一半 (yíbàn) num/m - half
+  256. 一点儿 (yìdiǎnr) num/m - a little bit
+  257. 衣服 (yīfu) n - clothes
+  258. 医生 (yīshēng) n - doctor
+  259. 一下 (yíxià) num/adv - once, a bit
+  260. 一些 (yìxiē) num/m - some
+  261. 医院 (yīyuàn) n - hospital
+  262. 椅子 (yǐzi) n - chair
+  263. 有 (yǒu) v - to have
+  264. 有的 (yǒude) pron - some (of)
+  265. 有些 (yǒuxiē) pron/adv - some
+  266. 有(一)点儿 (yǒu(yì)diǎnr) adv - a little
+  267. 雨 (yǔ) n - rain
+  268. 元 (yuán) m - yuan (Chinese currency)
+  269. 月 (yuè) n - month, moon
+  270. 再 (zài) adv - again
+  271. 在 (zài) v/prep - at; to be in/at
+  272. 再见 (zàijiàn) v - goodbye
+  273. 早 (zǎo) adj - early
+  274. 早饭 (zǎofàn) n - breakfast
+  275. 早上 (zǎoshang) n - early morning
+  276. 怎么 (zěnme) pron - how
+  277. 怎么样 (zěnmeyàng) pron - how about, how is it
+  278. 找 (zhǎo) v - to look for
+  279. 这 (zhè) pron - this
+  280. 这边 (zhèbiān) pron - this side, here
+  281. 这个 (zhège) pron - this one
+  282. 这里 (zhèlǐ) pron - here
+  283. 真 (zhēn) adv/adj - really; real
+  284. 正在 (zhèngzài) adv - in the process of
+  285. 这儿 (zhèr) pron - here
+  286. 这些 (zhèxiē) pron - these
+  287. 只 (zhǐ) m - measure for one of a pair
+  288. 知道 (zhīdào) v - to know
+  289. 中国 (Zhōngguó) n - China
+  290. 中文 (Zhōngwén) n - Chinese language
+  291. 中午 (zhōngwǔ) n - noon
+  292. 中学 (zhōngxué) n - middle school
+  293. 中学生 (zhōngxuésheng) n - middle school student
+  294. 住 (zhù) v - to live, to stay
+  295. 桌子 (zhuōzi) n - table
+  296. 字 (zì) n - character, word
+  297. 坐 (zuò) v - to sit
+  298. 做 (zuò) v - to do, to make
+  299. 做饭 (zuò fàn) v - to cook
+  300. 昨天 (zuótiān) n - yesterday
+  `;
+
+    // You can paste full 300 list here if expanding manually later
+
+    let words = [];
+    let currentIndex = 0;
+    let shuffled = false;
+    let progress = [];
+    let remaining = []; // indices of cards not yet answered
+
+    function init() {
+      const rawLines = RAW_LIST.trim().split("\n");
+      rawLines.forEach(line => {
+        line = line.replace(/^\s*\d+\.*\s*/, '').trim(); // remove leading numbers
+
+        // split off english meaning after ' - ' if present
+        let english = 'Learner meaning';
+        let beforeDash = line;
+        const dashIndex = line.indexOf(' - ');
+        if (dashIndex !== -1) {
+          beforeDash = line.slice(0, dashIndex).trim();
+          english = line.slice(dashIndex + 3).trim();
+        }
+
+        // robustly parse hanzi/pinyin/pos; handle nested parens in pinyin
+        let hanzi = '';
+        let pinyin = '';
+        let pos = '—';
+        // look for '(' that denotes start of pinyin; should follow a space so we don't pick
+        // parentheses that belong to the hanzi itself (e.g. 没(有)).
+        let pinyinOpen = -1;
+        const spaceParen = beforeDash.match(/\s\(/);
+        if (spaceParen) {
+          pinyinOpen = spaceParen.index + 1; // position of '('
+        }
+        if (pinyinOpen !== -1) {
+          // find matching closing parenthesis for this open
+          let depth = 0;
+          let closeIdx = -1;
+          for (let j = pinyinOpen; j < beforeDash.length; j++) {
+            if (beforeDash[j] === '(') depth++;
+            else if (beforeDash[j] === ')') {
+              depth--;
+              if (depth === 0) { closeIdx = j; break; }
+            }
+          }
+          if (closeIdx !== -1) {
+            hanzi = beforeDash.slice(0, pinyinOpen).trim();
+            pinyin = beforeDash.slice(pinyinOpen + 1, closeIdx).trim();
+            pos = beforeDash.slice(closeIdx + 1).trim() || '—';
+          }
+        }
+        if (!hanzi) {
+          // fallback to older logic if something went wrong
+          const lastOpen = beforeDash.lastIndexOf('(');
+          const lastClose = beforeDash.lastIndexOf(')');
+          if (lastOpen !== -1 && lastClose > lastOpen) {
+            hanzi = beforeDash.slice(0, lastOpen).trim();
+            pinyin = beforeDash.slice(lastOpen + 1, lastClose).trim();
+            const posPart = beforeDash.slice(lastClose + 1).trim();
+            pos = posPart ? posPart : '—';
+          } else {
+            const match = beforeDash.match(/(.+?) \((.+?)\)/);
+            if (match) {
+              hanzi = match[1].trim();
+              pinyin = match[2].trim();
+              pos = '—';
+            }
+          }
+        }
+        if (hanzi) {
+          words.push({ hanzi, pinyin, meaning: english, pos });
+        }
+      });
+
+      // create blank progress and attempt to load previous state
+      progress = new Array(words.length).fill(null);
+      const saved = JSON.parse(localStorage.getItem('flashcard_state') || '{}');
+      if (saved.progress && Array.isArray(saved.progress) && saved.progress.length === words.length) {
+        progress = saved.progress;
+      }
+
+      // build remaining list from progress
+      remaining = [];
+      progress.forEach((val, i) => {
+        if (val === null) remaining.push(i);
+      });
+
+      // restore index/shuffle if available and valid
+      if (saved.currentIndex != null && remaining.includes(saved.currentIndex)) {
+        currentIndex = saved.currentIndex;
+      } else if (remaining.length > 0) {
+        currentIndex = remaining[0];
+      }
+      if (saved.shuffled != null) shuffled = saved.shuffled;
+
+      buildGrid();
+      updateGrid();
+      showCard();
+    }
+
+    function showCard() {
+      document.getElementById("cardFront").innerText = words[currentIndex].hanzi;
+      document.getElementById("cardBack").innerHTML = `
+        <div style="font-size:18px;margin-bottom:6px;"><strong>${words[currentIndex].pinyin}</strong></div>
+        <div style="font-size:16px;margin-bottom:6px;">${words[currentIndex].meaning}</div>
+        <div style="font-style:italic;color:#555;">${words[currentIndex].pos}</div>`;
+      document.querySelector(".card").classList.remove("flipped");
+
+      // update indicator: show original list position and remaining count
+      const indicator = document.getElementById('indicator');
+      if (indicator && words.length) {
+        const total = words.length;
+        const displayIndex = currentIndex + 1;
+        const remainingCount = remaining.length;
+        indicator.innerText = `Card ${displayIndex} / ${total} (remaining ${remainingCount})`;
+      }
+    }
+
+    function flipCard() {
+      document.querySelector(".card").classList.toggle("flipped");
+    }
+
+    function markAnswer(correct) {
+      progress[currentIndex] = correct;
+      // remove from remaining
+      remaining = remaining.filter(i => i !== currentIndex);
+      updateGrid();
+      saveState();
+      nextCard();
+    }
+
+    function nextCard() {
+      if (remaining.length === 0) {
+        alert('All cards answered');
+        return;
+      }
+      if (shuffled) {
+        const idx = Math.floor(Math.random() * remaining.length);
+        currentIndex = remaining[idx];
+      } else {
+        const pos = remaining.indexOf(currentIndex);
+        if (pos === -1 || pos === remaining.length - 1) {
+          currentIndex = remaining[0];
+        } else {
+          currentIndex = remaining[pos + 1];
+        }
+      }
+      saveState();
+      showCard();
+    }
+
+    function prevCard() {
+      if (remaining.length === 0) {
+        alert('All cards answered');
+        return;
+      }
+      if (shuffled) {
+        const idx = Math.floor(Math.random() * remaining.length);
+        currentIndex = remaining[idx];
+      } else {
+        const pos = remaining.indexOf(currentIndex);
+        if (pos <= 0) {
+          currentIndex = remaining[remaining.length - 1];
+        } else {
+          currentIndex = remaining[pos - 1];
+        }
+      }
+      saveState();
+      showCard();
+    }
+
+    function buildGrid() {
+      const grid = document.getElementById("progressGrid");
+      const mobileGrid = document.getElementById("mobileProgressGrid");
+      if (grid) grid.innerHTML = "";
+      if (mobileGrid) mobileGrid.innerHTML = "";
+      words.forEach((_, i) => {
+        const div = document.createElement("div");
+        div.innerText = i + 1;
+        div.onclick = () => {
+          currentIndex = i;
+          showCard();
+        };
+        if (grid) grid.appendChild(div);
+        if (mobileGrid) mobileGrid.appendChild(div.cloneNode(true));
+      });
+      updateGrid();
+    }
+
+    function updateGrid() {
+      const grid = document.getElementById("progressGrid");
+      const mobileGrid = document.getElementById("mobileProgressGrid");
+      const gridChildren = grid ? grid.children : [];
+      const mobileChildren = mobileGrid ? mobileGrid.children : [];
+      progress.forEach((val, i) => {
+        if (gridChildren[i]) {
+          gridChildren[i].classList.remove("correct", "wrong");
+          if (val === true) gridChildren[i].classList.add("correct");
+          if (val === false) gridChildren[i].classList.add("wrong");
+        }
+        if (mobileChildren[i]) {
+          mobileChildren[i].classList.remove("correct", "wrong");
+          if (val === true) mobileChildren[i].classList.add("correct");
+          if (val === false) mobileChildren[i].classList.add("wrong");
+        }
+      });
+    }
+
+    function saveState() {
+      const state = { progress, currentIndex, shuffled };
+      localStorage.setItem('flashcard_state', JSON.stringify(state));
+    }
+
+    function resetProgress() {
+      progress = new Array(words.length).fill(null);
+      remaining = words.map((_, i) => i);
+      currentIndex = 0;
+      shuffled = false;
+      buildGrid();
+      updateGrid();
+      showCard();
+      saveState();
+    }
+
+    function shuffleToggle() {
+      shuffled = !shuffled;
+      if (!shuffled) {
+        currentIndex = 0;
+      }
+      saveState();
+    }
+
+    function toggleMobileProgress() {
+      const panel = document.getElementById('mobileProgress');
+      if (!panel) return;
+      panel.classList.toggle('open');
+      const btn = document.getElementById('toggleMobileProgress');
+      if (btn) btn.setAttribute('aria-expanded', panel.classList.contains('open'));
+    }
+
+    // key bindings
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      switch (e.key) {
+        case ' ':
+          flipCard();
+          e.preventDefault();
+          break;
+        case 'ArrowRight':
+          nextCard();
+          break;
+        case 'ArrowLeft':
+          prevCard();
+          break;
+        case ',':
+          prevCard();
+          break;
+        case '.':
+          nextCard();
+          break;
+        case '<':
+          prevCard();
+          break;
+        case '>':
+          nextCard();
+          break;
+        case 'c':
+        case 'C':
+          markAnswer(true);
+          break;
+        case 'w':
+        case 'W':
+          markAnswer(false);
+          break;
+        case 'r':
+        case 'R':
+          if (confirm('Clear all progress?')) resetProgress();
+          break;
+      }
+    });
+
+    init();
+
+  </script>
+
+</body>
+
+</html>
