@@ -142,6 +142,45 @@
       margin-left: 8px;
     }
 
+    /* Dark mode styles */
+    body.dark {
+      background: #121212;
+      color: #eee;
+    }
+
+    body.dark #controls {
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    body.dark .card-front,
+    body.dark .card-back {
+      background: #222;
+      color: #fff;
+      border-color: #555;
+    }
+
+    body.dark #sidebar {
+      background: #111;
+      color: #eee;
+    }
+
+    body.dark .grid div {
+      background: #333;
+      color: #eee;
+    }
+
+    body.dark button {
+      background: #444;
+      color: #eee;
+      border: 1px solid #666;
+    }
+
+    body.dark #shortcuts,
+    body.dark #indicator {
+      background: rgba(0, 0, 0, 0.6);
+      color: #eee;
+    }
+
     /* Responsive/mobile adjustments */
     @media (max-width: 700px) {
       body {
@@ -239,6 +278,7 @@
       <button onclick="nextCard()">&gt;</button>
       <button onclick="shuffleToggle()">Shuffle/Unshuffle</button>
       <button onclick="resetProgress()">Reset</button>
+      <button id="toggleDark" onclick="toggleDarkMode()">Dark Mode</button>
       <div id="indicator">Card 0 / 0</div>
       <div id="shortcuts">
         <small>Space: flip &nbsp;, / . or ← / →: prev/next &nbsp;←: wrong &nbsp;→: correct</small>
@@ -701,6 +741,7 @@
       buildGrid();
       updateGrid();
       showCard();
+      loadDarkMode();
     }
 
     function showCard() {
@@ -731,10 +772,34 @@
       remaining = remaining.filter(i => i !== currentIndex);
       updateGrid();
       saveState();
-      nextCard();
+      gotoNextUnanswered();
     }
 
+    // manual navigation (via comma/period or mobile controls) travels full list
     function nextCard() {
+      if (words.length === 0) return;
+      if (shuffled) {
+        currentIndex = Math.floor(Math.random() * words.length);
+      } else {
+        currentIndex = (currentIndex + 1) % words.length;
+      }
+      saveState();
+      showCard();
+    }
+
+    function prevCard() {
+      if (words.length === 0) return;
+      if (shuffled) {
+        currentIndex = Math.floor(Math.random() * words.length);
+      } else {
+        currentIndex = (currentIndex - 1 + words.length) % words.length;
+      }
+      saveState();
+      showCard();
+    }
+
+    // jumps to the next card that is still unanswered; used after marking
+    function gotoNextUnanswered() {
       if (remaining.length === 0) {
         alert('All cards answered');
         return;
@@ -748,26 +813,6 @@
           currentIndex = remaining[0];
         } else {
           currentIndex = remaining[pos + 1];
-        }
-      }
-      saveState();
-      showCard();
-    }
-
-    function prevCard() {
-      if (remaining.length === 0) {
-        alert('All cards answered');
-        return;
-      }
-      if (shuffled) {
-        const idx = Math.floor(Math.random() * remaining.length);
-        currentIndex = remaining[idx];
-      } else {
-        const pos = remaining.indexOf(currentIndex);
-        if (pos <= 0) {
-          currentIndex = remaining[remaining.length - 1];
-        } else {
-          currentIndex = remaining[pos - 1];
         }
       }
       saveState();
@@ -789,7 +834,6 @@
         if (grid) grid.appendChild(div);
         if (mobileGrid) {
           const mobileDiv = div.cloneNode(true);
-          // reattach handler because cloneNode doesn't copy listeners
           mobileDiv.onclick = div.onclick;
           mobileGrid.appendChild(mobileDiv);
         }
@@ -846,6 +890,26 @@
       panel.classList.toggle('open');
       const btn = document.getElementById('toggleMobileProgress');
       if (btn) btn.setAttribute('aria-expanded', panel.classList.contains('open'));
+    }
+
+    function updateDarkToggleText() {
+      const btn = document.getElementById('toggleDark');
+      if (!btn) return;
+      btn.textContent = document.body.classList.contains('dark')
+        ? 'Light Mode'
+        : 'Dark Mode';
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.body.classList.toggle('dark');
+      localStorage.setItem('darkMode', isDark);
+      updateDarkToggleText();
+    }
+
+    function loadDarkMode() {
+      const dark = localStorage.getItem('darkMode') === 'true';
+      if (dark) document.body.classList.add('dark');
+      updateDarkToggleText();
     }
 
     // key bindings
