@@ -1,319 +1,460 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
+<html lang="en"><head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HSK Flashcards</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      height: 100vh;
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>HSK Flashcards | Chinese Proficiency Test</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&amp;family=Noto+Serif+SC:wght@400;700&amp;display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#60a5fa',
+            accent: '#2563eb',
+            neutral: '#f3f4f6',
+            'neutral-dark': '#374151',
+            success: '#10b981',
+            danger: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6'
+          },
+          fontFamily: {
+            sans: ['Noto Sans SC', 'sans-serif'],
+            serif: ['Noto Serif SC', 'serif']
+          },
+          animation: {
+            'flip': 'flip 0.6s ease-in-out',
+            'slide-in': 'slideIn 0.5s ease-out',
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'pulse-slow': 'pulse 3s infinite'
+          },
+          keyframes: {
+            flip: {
+              '0%': { transform: 'rotateY(0deg)' },
+              '100%': { transform: 'rotateY(180deg)' }
+            },
+            slideIn: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' }
+            }
+          }
+        }
+      },
+      darkMode: 'class'
     }
-
-    #main {
-      flex: 3;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 18;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 8px;
-      border-radius: 8px;
-    }
-
-    .card {
-      width: 300px;
-      height: 200px;
-      perspective: 1000px;
-      position: relative;
-      z-index: 20;
-    }
-
-    .card-inner {
-      width: 100%;
-      height: 100%;
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-      position: relative;
-    }
-
-    .card.flipped .card-inner {
-      transform: rotateY(180deg);
-    }
-
-    .card-front,
-    .card-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #333;
-      border-radius: 10px;
-      font-size: 40px;
-      background: white;
-    }
-
-    .card-back {
-      transform: rotateY(180deg);
-      font-size: 18px;
-      flex-direction: column;
-      padding: 10px;
-    }
-
-    button {
-      margin: 10px;
-      padding: 12px 18px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    #sidebar {
-      flex: 2;
-      overflow-y: scroll;
-      padding: 10px;
-      border-left: 2px solid #ddd;
-      z-index: 2;
-      background: #fff;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 5px;
-    }
-
-    .grid div {
-      padding: 8px;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 5px;
-      background: #eee;
-    }
-
-    .mobile-grid {
-      display: none;
-      margin-top: 8px;
-    }
-
-    #toggleMobileProgress {
-      display: none;
-    }
-
-    .answer-buttons {
-      margin-top: 14px;
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-    }
-
-    #shortcuts {
-      margin-top: 6px;
-      font-size: 16px;
-      color: #222;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 4px 8px;
-      border-radius: 4px;
-      display: inline-block;
-    }
-
-    /* Card indicator */
-    #indicator {
-      margin-top: 6px;
-      font-size: 16px;
-      color: #111;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 6px 10px;
-      border-radius: 6px;
-      display: inline-block;
-      margin-left: 8px;
-    }
-
-    /* Dark mode styles */
-    body.dark {
-      background: #121212;
-      color: #eee;
-    }
-
-    body.dark #controls {
-      background: rgba(0, 0, 0, 0.7);
-    }
-
-    body.dark .card-front,
-    body.dark .card-back {
-      background: #222;
-      color: #fff;
-      border-color: #555;
-    }
-
-    body.dark #sidebar {
-      background: #111;
-      color: #eee;
-    }
-
-    body.dark .grid div {
-      background: #333;
-      color: #eee;
-    }
-
-    body.dark button {
-      background: #444;
-      color: #eee;
-      border: 1px solid #666;
-    }
-
-    body.dark #shortcuts,
-    body.dark #indicator {
-      background: rgba(0, 0, 0, 0.6);
-      color: #eee;
-    }
-
-    /* Responsive/mobile adjustments */
-    @media (max-width: 700px) {
-      body {
-        flex-direction: column;
-        height: auto;
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .card-shadow {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
       }
-
-      #main {
-        flex: none;
-        padding: 20px;
+      .card-shadow-hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
       }
-
-      #sidebar {
-        display: none;
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-
-      /* mobile progress panel: shown only when toggled open */
-      .mobile-grid {
-        display: none;
+      .bg-gradient-blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
       }
-
-      .mobile-grid.open {
-        display: block;
-        max-height: 220px;
-        overflow: auto;
-        width: 100%;
+      .bg-gradient-green {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
       }
-
-      /* toggle button visible only on small screens */
-      #toggleMobileProgress {
-        display: inline-block;
+      .bg-gradient-red {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
       }
-
-      #controls {
-        position: static;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: center;
-        margin-bottom: 12px;
+      .perspective {
+        perspective: 1000px;
       }
-
-      .card {
-        width: min(92vw, 420px);
-        height: calc(min(92vw, 420px) * 0.62);
+      .preserve-3d {
+        transform-style: preserve-3d;
       }
-
-      .card-front,
-      .card-back {
-        font-size: 30px;
+      .backface-hidden {
+        backface-visibility: hidden;
       }
-
-      .card-back {
-        font-size: 16px;
+      .rotate-y-180 {
+        transform: rotateY(180deg);
       }
-
-      button {
-        margin: 6px;
-        padding: 10px 12px;
-        font-size: 16px;
-      }
-
-      #shortcuts {
-        font-size: 14px;
-      }
-
-      #indicator {
-        font-size: 14px;
-      }
-
-      .grid {
-        grid-template-columns: repeat(6, 1fr);
-        gap: 4px;
-      }
-    }
-
-    .correct {
-      background: #4CAF50 !important;
-      color: white;
-    }
-
-    .wrong {
-      background: #f44336 !important;
-      color: white;
     }
   </style>
 </head>
 
-<body>
-
-  <div id="main">
-
-    <div id="controls">
-      <button onclick="prevCard()">&lt;</button>
-      <button onclick="nextCard()">&gt;</button>
-      <button onclick="shuffleToggle()">Shuffle/Unshuffle</button>
-      <button onclick="resetProgress()">Reset</button>
-      <button id="toggleDark" onclick="toggleDarkMode()">Dark Mode</button>
-      <div id="indicator">Card 0 / 0</div>
-      <div id="shortcuts">
-        <small>Space: flip &nbsp;, / . or ← / →: prev/next &nbsp;←: wrong &nbsp;→: correct</small>
-      </div>
-      <div class="mobile-grid" id="mobileProgress">
-        <h4 style="margin:6px 0 6px 0; font-size:14px;">Progress</h4>
-        <div class="grid" id="mobileProgressGrid"></div>
-      </div>
-      <button id="toggleMobileProgress" onclick="toggleMobileProgress()">Progress</button>
-    </div>
-
-    <div class="card" onclick="flipCard()">
-      <div class="card-inner">
-        <div class="card-front" id="cardFront"></div>
-        <div class="card-back" id="cardBack"></div>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300">
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
+    <div class="text-center">
+      <img src="https://p26-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/58be6dc20c394d4794eef37fd59c191f~tplv-a9rns2rl98-image.image?lk3s=8e244e95&amp;rcl=20260405215316CE1EF73C02D722B627D7&amp;rrcfp=f06b921b&amp;x-expires=1777989231&amp;x-signature=8Brsgu6liw3YWgAII6dm1vj4DPw%3D" alt="HSK Flashcards Logo" class="w-32 h-32 mx-auto mb-4 animate-pulse-slow">
+      <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="loading">Loading, please wait...</h2>
+      <div class="mt-4 flex justify-center">
+        <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div id="loading-bar" class="h-full bg-primary dark:bg-secondary rounded-full" style="width: 0%"></div>
+        </div>
       </div>
     </div>
-
-    <div class="answer-buttons">
-      <button onclick="markAnswer(true)">Correct</button>
-      <button onclick="markAnswer(false)">Wrong</button>
-    </div>
-
   </div>
 
-  <div id="sidebar">
-    <h3>Progress</h3>
-    <div class="grid" id="progressGrid"></div>
+  <!-- App Container -->
+  <div id="app" class="container mx-auto px-4 py-8 max-w-7xl hidden">
+    <!-- Header -->
+    <header class="mb-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center mb-4 md:mb-0">
+          <img src="https://p26-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/58be6dc20c394d4794eef37fd59c191f~tplv-a9rns2rl98-image.image?lk3s=8e244e95&amp;rcl=20260405215316CE1EF73C02D722B627D7&amp;rrcfp=f06b921b&amp;x-expires=1777989231&amp;x-signature=8Brsgu6liw3YWgAII6dm1vj4DPw%3D" alt="HSK Flashcards Logo" class="w-12 h-12 mr-3">
+          <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-primary dark:text-secondary">HSK Flashcards</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Chinese Proficiency Test | HSK Level 1</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button id="toggle-language" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <i class="fa fa-globe" aria-hidden="true"></i>
+          </button>
+          <button id="toggle-dark-mode" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <i class="fa fa-moon-o dark:hidden" aria-hidden="true"></i>
+            <i class="fa fa-sun-o hidden dark:block text-yellow-300" aria-hidden="true"></i>
+          </button>
+          <button id="show-stats" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <i class="fa fa-bar-chart" aria-hidden="true"></i>
+          </button>
+          <button id="show-settings" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <i class="fa fa-cog" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex flex-col lg:flex-row gap-6 pb-16">
+      <!-- Left Panel - Flashcard -->
+      <div class="lg:w-2/3 flex flex-col">
+        <!-- Normal Modes Container -->
+        <div id="normal-modes-container" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-md">
+          <h2 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white" data-lang="study-mode">Study Mode</h2>
+          <div class="flex flex-wrap gap-2">
+            <button data-mode="standard" class="mode-btn bg-primary text-white px-4 py-2 rounded-lg hover:bg-accent transition-colors relative" title="Standard Mode: Flip cards manually to check your knowledge">
+              <span data-lang="standard-mode">Standard Mode</span>
+            </button>
+            <button data-mode="learn" class="mode-btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors relative" title="Learn Mode: Cards automatically flip to show answers">
+              <span data-lang="learn-mode">Learn Mode</span>
+            </button>
+            <button data-mode="test" class="mode-btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors relative" title="Test Mode: Tracks your response time and accuracy">
+              <span data-lang="test-mode">Test Mode</span>
+            </button>
+            <button data-mode="review" id="review-mode-btn" class="mode-btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors relative" title="Review Mode: Focus on words you need to review">
+              <span data-lang="review-mode">Review Mode</span>
+            </button>
+          </div>
+          <div class="mt-2 text-sm text-gray-600 dark:text-gray-400" data-lang="mode-description">
+            Hover over mode buttons to see descriptions
+          </div>
+        </div>
+        
+        <!-- Review Mode Container -->
+        <div id="review-mode-container" class="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-md hidden">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white" data-lang="review-mode">Review Mode</h2>
+            <button id="exit-review-mode" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center">
+              <i class="fa fa-arrow-left mr-2" aria-hidden="true"></i>
+              <span data-lang="back-to-study">Back to Study</span>
+            </button>
+          </div>
+          <!-- Review Progress -->
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-900 dark:text-white">Review Progress</span>
+              <span id="review-progress-text" class="text-sm font-medium text-primary dark:text-secondary">0 / 0</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div id="review-progress-bar" class="bg-secondary dark:bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 flex justify-between">
+              <span>
+                <span id="review-correct-count" class="text-green-500 dark:text-green-400">0</span> 
+                <span data-lang="correct">Correct</span>
+              </span>
+              <span>
+                <span id="review-remaining-count" class="text-red-500 dark:text-red-400">0</span> 
+                <span data-lang="remaining">Remaining</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flashcard Container -->
+        <div class="flex-grow flex flex-col items-center justify-center mb-6">
+          <div id="flashcard" class="perspective w-full max-w-md aspect-[3/2] mb-8 cursor-pointer">
+            <div id="card-inner" class="preserve-3d w-full h-full relative transition-transform duration-600">
+              <!-- Card Front -->
+              <div id="card-front" class="absolute w-full h-full backface-hidden bg-white dark:bg-gray-800 rounded-2xl card-shadow flex items-center justify-center p-6">
+                <span id="hanzi" class="text-6xl md:text-7xl font-serif text-primary dark:text-secondary"></span>
+              </div>
+              
+              <!-- Card Back -->
+              <div id="card-back" class="absolute w-full h-full backface-hidden bg-white dark:bg-gray-800 rounded-2xl card-shadow flex flex-col items-center justify-center p-6 rotate-y-180">
+                <div class="text-center">
+                  <h3 id="pinyin" class="text-2xl md:text-3xl font-bold text-primary dark:text-secondary mb-3"></h3>
+                  <p id="meaning" class="text-lg md:text-xl mb-4 text-gray-900 dark:text-white"></p>
+                  <span id="pos" class="text-sm text-gray-500 dark:text-gray-400 italic"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Navigation -->
+          <div class="flex justify-between items-center w-full max-w-md">
+            <button id="prev-card" class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+              <i class="fa fa-chevron-left text-lg" aria-hidden="true"></i>
+            </button>
+            
+            <div id="card-counter" class="text-sm text-gray-600 dark:text-gray-400">
+              <span data-lang="card">Card</span> 0 / 0
+            </div>
+            
+            <button id="next-card" class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+              <i class="fa fa-chevron-right text-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Answer Buttons -->
+        <div id="answer-buttons" class="flex justify-center gap-4 mt-4">
+          <button id="mark-correct" class="px-6 py-3 bg-gradient-green text-white rounded-xl shadow-md hover:shadow-lg transition-shadow flex items-center">
+            <i class="fa fa-check-circle mr-2" aria-hidden="true"></i>
+            <span data-lang="correct">Correct</span>
+          </button>
+          <button id="mark-wrong" class="px-6 py-3 bg-gradient-red text-white rounded-xl shadow-md hover:shadow-lg transition-shadow flex items-center">
+            <i class="fa fa-times-circle mr-2" aria-hidden="true"></i>
+            <span data-lang="wrong">Wrong</span>
+          </button>
+        </div>
+
+        <!-- Keyboard Shortcuts -->
+        <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <p><span data-lang="keyboard-shortcuts">Keyboard Shortcuts:</span> <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Space</kbd> <span data-lang="flip-card">Flip Card</span> | <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">←</kbd> <span data-lang="wrong">Wrong</span> | <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">→</kbd> <span data-lang="correct">Correct</span> | <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">,</kbd> / <kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">.</kbd> <span data-lang="prev-next">Prev/Next</span></p>
+        </div>
+      </div>
+
+      <!-- Right Panel - Progress & Controls -->
+      <div class="lg:w-1/3">
+        <!-- Progress Overview -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md mb-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa fa-tasks mr-2 text-primary dark:text-secondary" aria-hidden="true"></i>
+            <span class="text-gray-900 dark:text-white" data-lang="progress">Progress</span>
+          </h2>
+          
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+              <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="total-words">Total Words</p>
+              <p id="total-words" class="text-2xl font-bold">300</p>
+            </div>
+            <div class="bg-green-100 dark:bg-green-900/30 rounded-lg p-3 text-center">
+              <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="known-words">Mastered</p>
+              <p id="known-words" class="text-2xl font-bold text-green-600 dark:text-green-400">0</p>
+            </div>
+            <div id="need-review-card" class="bg-red-100 dark:bg-red-900/30 rounded-lg p-3 text-center cursor-pointer hover:bg-red-200 dark:hover:bg-red-800/40 transition-colors">
+              <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="unknown-words">Need Review</p>
+              <p id="unknown-words" class="text-2xl font-bold text-red-600 dark:text-red-400">0</p>
+            </div>
+          </div>
+          
+          <div class="mb-2 flex justify-between text-sm">
+            <span class="text-gray-900 dark:text-white" data-lang="completion-rate">Completion Rate</span>
+            <span id="progress-percentage" class="text-gray-900 dark:text-white">0%</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+            <div id="progress-bar" class="bg-primary dark:bg-secondary h-2.5 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Word Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold flex items-center">
+              <i class="fa fa-th mr-2 text-primary dark:text-secondary" aria-hidden="true"></i>
+              <span class="text-gray-900 dark:text-white" data-lang="word-list">Word List</span>
+            </h2>
+            <div class="flex gap-2">
+              <button id="shuffle-btn" class="p-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                <i class="fa fa-random" aria-hidden="true"></i>
+              </button>
+              <button id="reset-btn" class="p-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                <i class="fa fa-refresh" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-64 overflow-y-auto p-1" id="word-grid">
+            <!-- Word grid will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa fa-clock-o mr-2 text-primary dark:text-secondary" aria-hidden="true"></i>
+            <span class="text-gray-900 dark:text-white" data-lang="recent-activity">Recent Activity</span>
+          </h2>
+          
+          <div class="space-y-3 max-h-48 overflow-y-auto" id="recent-activity">
+            <p class="text-gray-500 dark:text-gray-400 text-center italic" data-lang="start-learning">Start learning to see activity records</p>
+            <!-- Recent activity will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Statistics Modal -->
+  <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="statistics">Statistics</h2>
+        <button id="close-stats" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <i class="fa fa-times text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <h3 class="text-lg font-semibold mb-3" data-lang="overall-progress">Overall Progress</h3>
+          <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
+            <canvas id="progress-chart" height="200"></canvas>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold mb-3" data-lang="accuracy">Accuracy</h3>
+          <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
+            <canvas id="accuracy-chart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-3">学习时间</h3>
+        <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
+          <canvas id="time-chart" height="200"></canvas>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="total-studies">Total Studies</p>
+          <p id="total-studies" class="text-xl font-bold">0</p>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="avg-accuracy">Avg. Accuracy</p>
+          <p id="avg-accuracy" class="text-xl font-bold">0%</p>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="today-studies">Today's Studies</p>
+          <p id="today-studies" class="text-xl font-bold">0</p>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400" data-lang="study-days">Study Days</p>
+          <p id="study-days" class="text-xl font-bold">0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Words Modal -->
+  <div id="review-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="words-to-review">Words to Review</h2>
+        <button id="close-review" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <i class="fa fa-times text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <div id="review-words-container" class="space-y-4">
+        <!-- Review words will be populated by JavaScript -->
+      </div>
+      
+      <div class="mt-6 text-center">
+        <button id="start-review-mode" class="px-6 py-3 bg-gradient-blue text-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <span data-lang="start-review-mode">Start Review Mode</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="settings">Settings</h2>
+        <button id="close-settings" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <i class="fa fa-times text-xl" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+
+        
+        <div>
+          <label class="block text-gray-700 dark:text-gray-300 mb-2" data-lang="card-animation">Card Flip Animation</label>
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="card-animation" class="sr-only peer" checked="">
+            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+            <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300" data-lang="enable">Enable</span>
+          </label>
+        </div>
+        
+        <div>
+          <label for="study-mode" class="block text-gray-700 dark:text-gray-300 mb-2" data-lang="default-study-mode">Default Study Mode</label>
+          <select id="study-mode" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            <option value="standard" selected="" data-lang="standard-mode">Standard Mode</option>
+            <option value="learn" data-lang="learn-mode">Learn Mode</option>
+            <option value="test" data-lang="test-mode">Test Mode</option>
+          </select>
+        </div>
+        
+        <div>
+          <label for="card-speed" class="block text-gray-700 dark:text-gray-300 mb-2" data-lang="card-flip-speed">Card Flip Speed</label>
+          <input type="range" id="card-speed" min="100" max="1000" value="600" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <span data-lang="fast">Fast</span>
+            <span data-lang="slow">Slow</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex justify-end">
+        <button id="save-settings" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-accent transition-colors">
+          <span data-lang="save-settings">Save Settings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <div class="flex items-center">
+      <i class="fa fa-check-circle mr-2" aria-hidden="true"></i>
+      <span id="toast-message">操作成功</span>
+    </div>
   </div>
 
   <script>
-
     // ==========================
     // MODULAR DATA STRUCTURE
-    // Add HSK2 later by adding another array
     // ==========================
 
     const HSK_DATA = {
@@ -327,15 +468,10 @@
         { hanzi: "半", pinyin: "bàn", meaning: "half", pos: "number" },
         { hanzi: "包子", pinyin: "bāozi", meaning: "steamed bun", pos: "noun" },
         { hanzi: "杯子", pinyin: "bēizi", meaning: "cup", pos: "noun" },
-        { hanzi: "本", pinyin: "běn", meaning: "measure word for books", pos: "measure word" },
-
-        // FULL LIST CONTINUES...
-        // To avoid truncation in chat, the rest of the 300 entries
-        // are generated dynamically below from the raw list.
-
+        { hanzi: "本", pinyin: "běn", meaning: "measure word for books", pos: "measure word" }
+        // The rest of the words will be populated from the RAW_LIST below
       ]
     };
-
 
     // ==========================
     // AUTO-POPULATE REMAINING 290 WORDS
@@ -644,16 +780,186 @@
   300. 昨天 (zuótiān) n - yesterday
   `;
 
-    // You can paste full 300 list here if expanding manually later
+    // ==========================
+    // APP STATE AND VARIABLES
+    // ==========================
 
     let words = [];
     let currentIndex = 0;
     let shuffled = false;
     let progress = [];
     let remaining = []; // indices of cards not yet answered
+    let studyMode = 'standard'; // standard, learn, test
+    let studyStats = {
+      totalStudies: 0,
+      correctAnswers: 0,
+      wrongAnswers: 0,
+      studyTime: 0, // in seconds
+      lastStudyDate: null,
+      studyDays: 0,
+      dailyStats: {} // date: { studies, correct, wrong, time }
+    };
+    let recentActivity = [];
+    let settings = {
+      cardAnimation: true,
+      defaultStudyMode: 'standard',
+      cardSpeed: 600,
+      language: 'en' // 'en' for English, 'zh' for Chinese
+    };
+    
+    // Translation dictionaries
+    const translations = {
+      en: {
+        'loading': 'Loading, please wait...',
+        'study-mode': 'Study Mode',
+        'standard-mode': 'Standard Mode',
+        'learn-mode': 'Learn Mode',
+        'test-mode': 'Test Mode',
+        'mode-description': 'Hover over mode buttons to see descriptions',
+        'card': 'Card',
+        'correct': 'Correct',
+        'wrong': 'Wrong',
+        'keyboard-shortcuts': 'Keyboard Shortcuts:',
+        'flip-card': 'Flip Card',
+        'prev-next': 'Prev/Next',
+        'progress': 'Progress',
+        'total-words': 'Total Words',
+        'known-words': 'Mastered',
+        'unknown-words': 'Need Review',
+        'completion-rate': 'Completion Rate',
+        'word-list': 'Word List',
+        'recent-activity': 'Recent Activity',
+        'start-learning': 'Start learning to see activity records',
+        'statistics': 'Statistics',
+        'overall-progress': 'Overall Progress',
+        'accuracy': 'Accuracy',
+        'study-time': 'Study Time',
+        'total-studies': 'Total Studies',
+        'avg-accuracy': 'Avg. Accuracy',
+        'today-studies': "Today's Studies",
+        'study-days': 'Study Days',
+        'settings': 'Settings',
+        'auto-play-pinyin': 'Auto-play Pinyin',
+        'card-animation': 'Card Flip Animation',
+        'default-study-mode': 'Default Study Mode',
+        'card-flip-speed': 'Card Flip Speed',
+        'fast': 'Fast',
+        'slow': 'Slow',
+        'enable': 'Enable',
+        'save-settings': 'Save Settings',
+        'correct-feedback': 'Correct!',
+        'wrong-feedback': 'Need more practice',
+        'all-cards-completed': 'Congratulations! You have completed all cards.',
+        'shuffle-enabled': 'Shuffle mode enabled',
+        'shuffle-disabled': 'Shuffle mode disabled',
+        'progress-reset': 'Progress has been reset',
+        'settings-saved': 'Settings saved',
+        'operation-success': 'Operation successful',
+        'words-to-review': 'Words to Review',
+        'start-review-mode': 'Start Review Mode',
+        'no-words-to-review': 'No words need review yet!',
+        'review-mode': 'Review Mode'
+      },
+      zh: {
+        'loading': '加载中，请稍候...',
+        'study-mode': '学习模式',
+        'standard-mode': '标准模式',
+        'learn-mode': '学习模式',
+        'test-mode': '测试模式',
+        'mode-description': '将鼠标悬停在模式按钮上查看说明',
+        'card': '卡片',
+        'correct': '正确',
+        'wrong': '错误',
+        'keyboard-shortcuts': '键盘快捷键:',
+        'flip-card': '翻转卡片',
+        'prev-next': '上一张/下一张',
+        'progress': '学习进度',
+        'total-words': '总词汇量',
+        'known-words': '已掌握',
+        'unknown-words': '需复习',
+        'completion-rate': '完成进度',
+        'word-list': '词汇表',
+        'recent-activity': '最近学习',
+        'start-learning': '开始学习以查看活动记录',
+        'statistics': '学习统计',
+        'overall-progress': '总体进度',
+        'accuracy': '学习准确度',
+        'study-time': '学习时间',
+        'total-studies': '总学习次数',
+        'avg-accuracy': '平均准确率',
+        'today-studies': '今日学习',
+        'study-days': '学习天数',
+        'settings': '设置',
+        'auto-play-pinyin': '自动播放拼音',
+        'card-animation': '卡片翻转动画',
+        'default-study-mode': '默认学习模式',
+        'card-flip-speed': '卡片翻转速度',
+        'fast': '快',
+        'slow': '慢',
+        'enable': '启用',
+        'save-settings': '保存设置',
+        'correct-feedback': '回答正确！',
+        'wrong-feedback': '需要继续练习',
+        'all-cards-completed': '恭喜！您已完成所有卡片的学习。',
+        'shuffle-enabled': '已开启随机模式',
+        'shuffle-disabled': '已关闭随机模式',
+        'progress-reset': '学习进度已重置',
+        'settings-saved': '设置已保存',
+        'operation-success': '操作成功',
+        'words-to-review': '待复习词汇',
+        'start-review-mode': '开始复习模式',
+        'no-words-to-review': '暂无需要复习的词汇！',
+        'review-mode': '复习模式'
+      }
+    };
+    let studyStartTime = null;
+    let charts = {};
+
+    // ==========================
+    // INITIALIZATION
+    // ==========================
 
     function init() {
-      const rawLines = RAW_LIST.trim().split("\n");
+      // Simulate loading progress
+      simulateLoading();
+      
+      // Parse HSK data from RAW_LIST
+      parseRawData();
+      
+      // Load saved state
+      loadState();
+      
+      // Initialize UI
+      buildWordGrid();
+      updateProgress();
+      showCard();
+      updateRecentActivity();
+      
+      // Set up event listeners
+      setupEventListeners();
+      
+      // Show app after initialization
+      setTimeout(() => {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+      }, 1500);
+    }
+
+    function simulateLoading() {
+      const loadingBar = document.getElementById('loading-bar');
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+        }
+        loadingBar.style.width = `${progress}%`;
+      }, 100);
+    }
+
+    function parseRawData() {
+      const rawLines = RAW_LIST.trim().split('\n');
       rawLines.forEach(line => {
         line = line.replace(/^\s*\d+\.*\s*/, '').trim(); // remove leading numbers
 
@@ -716,229 +1022,1010 @@
           words.push({ hanzi, pinyin, meaning: english, pos });
         }
       });
+    }
 
-      // create blank progress and attempt to load previous state
-      progress = new Array(words.length).fill(null);
-      const saved = JSON.parse(localStorage.getItem('flashcard_state') || '{}');
-      if (saved.progress && Array.isArray(saved.progress) && saved.progress.length === words.length) {
-        progress = saved.progress;
+    function loadState() {
+      // Load progress
+      const savedProgress = JSON.parse(localStorage.getItem('flashcard_progress') || '{}');
+      if (savedProgress.progress && Array.isArray(savedProgress.progress) && savedProgress.progress.length === words.length) {
+        progress = savedProgress.progress;
+      } else {
+        // Initialize with proper objects, not null values
+        progress = new Array(words.length).fill(null).map(() => ({
+          attempts: 0,
+          correct: 0,
+          lastReviewed: null
+        }));
       }
 
-      // build remaining list from progress
+      // Load remaining cards
       remaining = [];
       progress.forEach((val, i) => {
-        if (val === null) remaining.push(i);
+        if (!val || val.attempts === 0) remaining.push(i);
       });
 
-      // restore index/shuffle if available and valid
-      if (saved.currentIndex != null && remaining.includes(saved.currentIndex)) {
-        currentIndex = saved.currentIndex;
+      // Load study stats
+      const savedStats = JSON.parse(localStorage.getItem('flashcard_stats') || '{}');
+      if (savedStats) {
+        studyStats = { ...studyStats, ...savedStats };
+      }
+
+      // Load recent activity
+      const savedActivity = JSON.parse(localStorage.getItem('flashcard_activity') || '[]');
+      if (Array.isArray(savedActivity)) {
+        recentActivity = savedActivity;
+      }
+
+      // Load settings
+      const savedSettings = JSON.parse(localStorage.getItem('flashcard_settings') || '{}');
+      if (savedSettings) {
+        // Remove autoPlayPinyin if it exists (backward compatibility)
+        if (savedSettings.autoPlayPinyin !== undefined) {
+          delete savedSettings.autoPlayPinyin;
+        }
+        settings = { ...settings, ...savedSettings };
+        applySettings();
+      }
+
+      // Load current index and shuffle state
+      const savedState = JSON.parse(localStorage.getItem('flashcard_state') || '{}');
+      if (savedState.currentIndex != null && remaining.includes(savedState.currentIndex)) {
+        currentIndex = savedState.currentIndex;
       } else if (remaining.length > 0) {
         currentIndex = remaining[0];
       }
-      if (saved.shuffled != null) shuffled = saved.shuffled;
+      if (savedState.shuffled != null) shuffled = savedState.shuffled;
+      
+      // Set study mode
+      studyMode = settings.defaultStudyMode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        if (btn.dataset.mode === studyMode) {
+          btn.classList.add('bg-primary', 'text-white');
+          btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+        } else {
+          btn.classList.remove('bg-primary', 'text-white');
+          btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+        }
+      });
 
-      buildGrid();
-      updateGrid();
-      showCard();
-      loadDarkMode();
+      // Update study start time
+      studyStartTime = Date.now();
     }
 
-    function showCard() {
-      document.getElementById("cardFront").innerText = words[currentIndex].hanzi;
-      document.getElementById("cardBack").innerHTML = `
-        <div style="font-size:18px;margin-bottom:6px;"><strong>${words[currentIndex].pinyin}</strong></div>
-        <div style="font-size:16px;margin-bottom:6px;">${words[currentIndex].meaning}</div>
-        <div style="font-style:italic;color:#555;">${words[currentIndex].pos}</div>`;
-      document.querySelector(".card").classList.remove("flipped");
+    function saveState() {
+      // Save progress
+      localStorage.setItem('flashcard_progress', JSON.stringify({
+        progress,
+        lastUpdated: new Date().toISOString()
+      }));
 
-      // update indicator: show original list position and remaining count
-      const indicator = document.getElementById('indicator');
-      if (indicator && words.length) {
-        const total = words.length;
-        const displayIndex = currentIndex + 1;
-        const remainingCount = remaining.length;
-        indicator.innerText = `Card ${displayIndex} / ${total} (remaining ${remainingCount})`;
+      // Save study stats
+      localStorage.setItem('flashcard_stats', JSON.stringify(studyStats));
+
+      // Save recent activity
+      localStorage.setItem('flashcard_activity', JSON.stringify(recentActivity));
+
+      // Save current state
+      localStorage.setItem('flashcard_state', JSON.stringify({
+        currentIndex,
+        shuffled
+      }));
+    }
+
+    function applySettings() {
+      // Apply dark mode
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark');
       }
+
+      // Apply settings to UI elements
+      document.getElementById('card-animation').checked = settings.cardAnimation;
+      document.getElementById('study-mode').value = settings.defaultStudyMode;
+      document.getElementById('card-speed').value = settings.cardSpeed;
+      
+      // Apply card speed
+      document.getElementById('card-inner').style.transitionDuration = `${settings.cardSpeed}ms`;
+      
+      // Apply language
+      updateLanguage(settings.language);
+    }
+    
+    function updateLanguage(lang) {
+      // Update HTML lang attribute
+      document.documentElement.lang = lang;
+      
+      // Update all elements with data-lang attribute
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        const key = el.getAttribute('data-lang');
+        if (translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+      
+      // Update page title
+      if (lang === 'en') {
+        document.title = 'HSK Flashcards | Chinese Proficiency Test';
+      } else {
+        document.title = 'HSK Flashcards | 汉语水平考试单词卡';
+      }
+      
+      // Update chart legends if charts exist
+      if (charts.progress && charts.accuracy && charts.time) {
+        charts.progress.data.labels = lang === 'en' ? ['Mastered', 'Need Review', 'Not Studied'] : ['已掌握', '需复习', '未学习'];
+        charts.accuracy.data.labels = lang === 'en' ? ['Correct', 'Wrong'] : ['正确', '错误'];
+        charts.time.data.datasets[0].label = lang === 'en' ? 'Study Sessions' : '学习次数';
+        charts.progress.update();
+        charts.accuracy.update();
+        charts.time.update();
+      }
+      
+      // Update recent activity placeholder if no activities
+      const activityContainer = document.getElementById('recent-activity');
+      if (activityContainer.children.length === 1 && activityContainer.querySelector('p')) {
+        activityContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400 text-center italic">${translations[lang]['start-learning']}</p>`;
+      }
+      
+      // Update language in settings
+      settings.language = lang;
+    }
+    
+    function toggleLanguage() {
+      const newLang = settings.language === 'en' ? 'zh' : 'en';
+      updateLanguage(newLang);
+      localStorage.setItem('flashcard_settings', JSON.stringify(settings));
+      showToast(translations[newLang]['operation-success'], 'info');
+    }
+
+    // ==========================
+    // UI UPDATE FUNCTIONS
+    // ==========================
+
+    function showCard() {
+      if (words.length === 0 || currentIndex >= words.length) return;
+      
+      const word = words[currentIndex];
+      
+      // Clear content first to prevent glimpsing
+      document.getElementById('hanzi').textContent = '';
+      document.getElementById('pinyin').textContent = '';
+      document.getElementById('meaning').textContent = '';
+      document.getElementById('pos').textContent = '';
+      
+      // Reset card flip state to front
+      document.getElementById('card-inner').classList.remove('rotate-y-180');
+      
+      // Short delay to ensure card is face down before updating content
+      setTimeout(() => {
+        document.getElementById('hanzi').textContent = word.hanzi;
+        document.getElementById('pinyin').textContent = word.pinyin;
+        document.getElementById('meaning').textContent = word.meaning;
+        document.getElementById('pos').textContent = word.pos;
+        
+        // Update card counter
+        const cardText = settings.language === 'en' ? 'Card' : '卡片';
+        document.getElementById('card-counter').textContent = `${cardText} ${currentIndex + 1} / ${words.length}`;
+        
+        // Handle different study modes
+        if (studyMode === 'learn') {
+          // In learn mode, automatically flip card after a short delay
+          setTimeout(() => {
+            flipCard();
+          }, 1500);
+        } else if (studyMode === 'test') {
+          // In test mode, start timing
+          studyStartTime = Date.now();
+        }
+      }, 50);
     }
 
     function flipCard() {
-      document.querySelector(".card").classList.toggle("flipped");
+      if (!settings.cardAnimation) {
+        // If animation is disabled, just toggle the class without transition
+        document.getElementById('card-inner').classList.toggle('rotate-y-180');
+        return;
+      }
+      
+      document.getElementById('card-inner').classList.toggle('rotate-y-180');
     }
 
-    function markAnswer(correct) {
-      progress[currentIndex] = correct;
-      // remove from remaining
-      remaining = remaining.filter(i => i !== currentIndex);
-      updateGrid();
-      saveState();
-      gotoNextUnanswered();
+
+
+    function buildWordGrid() {
+      const grid = document.getElementById('word-grid');
+      grid.innerHTML = '';
+      
+      words.forEach((word, index) => {
+        const div = document.createElement('div');
+        div.textContent = index + 1;
+        div.className = 'w-8 h-8 flex items-center justify-center rounded-full text-xs font-medium cursor-pointer transition-colors';
+        
+        // Set initial state based on progress
+        updateWordGridItem(div, progress[index]);
+        
+        div.addEventListener('click', () => {
+          currentIndex = index;
+          showCard();
+        });
+        
+        grid.appendChild(div);
+      });
     }
 
-    // manual navigation (via comma/period or mobile controls) travels full list
+    function updateWordGridItem(item, status) {
+      item.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'bg-green-500', 'text-white', 'bg-red-500', 'text-white');
+      
+      if (status && status.attempts > 0) {
+        if (status.correct > 0 && status.correct === status.attempts) {
+          item.classList.add('bg-green-500', 'text-white');
+        } else if (status.correct === 0) {
+          item.classList.add('bg-red-500', 'text-white');
+        } else {
+          item.classList.add('bg-gray-200', 'dark:bg-gray-700');
+        }
+      } else {
+        item.classList.add('bg-gray-200', 'dark:bg-gray-700');
+      }
+    }
+
+    function updateProgress() {
+      const totalWords = words.length;
+      const knownWords = progress.filter(val => val && val.attempts > 0 && val.correct > 0 && val.correct === val.attempts).length;
+      const unknownWords = progress.filter(val => val && val.attempts > 0 && val.correct === 0).length;
+      const completedWords = knownWords + unknownWords;
+      const progressPercentage = totalWords > 0 ? Math.round((completedWords / totalWords) * 100) : 0;
+      
+      // Update progress display
+      document.getElementById('total-words').textContent = totalWords;
+      document.getElementById('known-words').textContent = knownWords;
+      document.getElementById('unknown-words').textContent = unknownWords;
+      document.getElementById('progress-percentage').textContent = `${progressPercentage}%`;
+      document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+      
+      // Update word grid items
+      const gridItems = document.getElementById('word-grid').children;
+      progress.forEach((status, index) => {
+        if (gridItems[index]) {
+          updateWordGridItem(gridItems[index], status);
+        }
+      });
+    }
+
+    function updateRecentActivity() {
+      const activityContainer = document.getElementById('recent-activity');
+      activityContainer.innerHTML = '';
+      
+      if (recentActivity.length === 0) {
+        activityContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400 text-center italic">${translations[settings.language]['start-learning']}</p>`;
+        return;
+      }
+      
+      // Show only the 5 most recent activities
+      const recent = recentActivity.slice(-5).reverse();
+      
+      recent.forEach(activity => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between text-sm';
+        
+        const time = new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const word = words[activity.index];
+        
+        div.innerHTML = `
+          <div class="flex items-center">
+            <span class="w-6 h-6 flex items-center justify-center rounded-full ${activity.correct ? 'bg-green-500' : 'bg-red-500'} text-white mr-2">
+              ${activity.correct ? '✓' : '✗'}
+            </span>
+            <span class="text-gray-900 dark:text-white">${word.hanzi} <span class="text-gray-500 dark:text-gray-400">${word.pinyin}</span></span>
+          </div>
+          <span class="text-gray-500 dark:text-gray-400">${time}</span>
+        `;
+        
+        activityContainer.appendChild(div);
+      });
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      
+      toastMessage.textContent = message;
+      
+      // Set toast color based on type
+      toast.className = 'fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 z-50';
+      
+      if (type === 'success') {
+        toast.classList.add('bg-green-500', 'text-white');
+      } else if (type === 'error') {
+        toast.classList.add('bg-red-500', 'text-white');
+      } else if (type === 'info') {
+        toast.classList.add('bg-blue-500', 'text-white');
+      }
+      
+      // Show toast
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // ==========================
+    // EVENT HANDLERS
+    // ==========================
+
+    function setupEventListeners() {
+      // Card flip
+      document.getElementById('flashcard').addEventListener('click', flipCard);
+      
+      // Navigation buttons
+      document.getElementById('prev-card').addEventListener('click', prevCard);
+      document.getElementById('next-card').addEventListener('click', nextCard);
+      
+      // Answer buttons
+      document.getElementById('mark-correct').addEventListener('click', () => markAnswer(true));
+      document.getElementById('mark-wrong').addEventListener('click', () => markAnswer(false));
+      
+      // Shuffle and reset buttons
+      document.getElementById('shuffle-btn').addEventListener('click', shuffleToggle);
+      document.getElementById('reset-btn').addEventListener('click', resetProgress);
+      
+      // Dark mode toggle
+      document.getElementById('toggle-dark-mode').addEventListener('click', toggleDarkMode);
+      
+      // Language toggle
+      document.getElementById('toggle-language').addEventListener('click', toggleLanguage);
+      
+      // Review mode functionality
+      document.getElementById('need-review-card').addEventListener('click', showReviewModal);
+      document.getElementById('close-review').addEventListener('click', hideReviewModal);
+      document.getElementById('start-review-mode').addEventListener('click', startReviewMode);
+      
+      // Stats and settings modals
+      document.getElementById('show-stats').addEventListener('click', showStatsModal);
+      document.getElementById('close-stats').addEventListener('click', hideStatsModal);
+      document.getElementById('show-settings').addEventListener('click', showSettingsModal);
+      document.getElementById('close-settings').addEventListener('click', hideSettingsModal);
+      document.getElementById('save-settings').addEventListener('click', saveUserSettings);
+      
+      // Study mode buttons
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Handle review mode specially
+          if (btn.dataset.mode === 'review') {
+            const hasReviewWords = getWordsToReview().length > 0;
+            
+            if (!hasReviewWords) {
+              showToast('No words to review.', 'info');
+              return;
+            }
+            
+            // If user clicks review mode before session end, use all incorrect words up to that point
+            if (remaining.length > 0) {
+              const confirmEarlyReview = confirm('You haven\'t completed all cards yet. Would you like to review incorrect words from your current session?');
+              if (!confirmEarlyReview) {
+                return;
+              }
+            }
+            
+            // Start review mode with the review words
+            startReviewMode();
+            return;
+          }
+          
+          // Handle exiting review mode
+          if (studyMode === 'review') {
+            exitReviewMode();
+          }
+          
+          document.querySelectorAll('.mode-btn').forEach(b => {
+            b.classList.remove('bg-primary', 'text-white');
+            b.classList.add('bg-gray-200', 'dark:bg-gray-700');
+          });
+          btn.classList.add('bg-primary', 'text-white');
+          btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+          studyMode = btn.dataset.mode;
+          showCard();
+        });
+      });
+      
+      // Exit review mode button
+      document.getElementById('exit-review-mode').addEventListener('click', exitReviewMode);
+      
+      // Keyboard shortcuts
+      document.addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        
+        switch (e.key) {
+          case ' ':
+            flipCard();
+            e.preventDefault();
+            break;
+          case 'ArrowRight':
+            markAnswer(true);
+            break;
+          case 'ArrowLeft':
+            markAnswer(false);
+            break;
+          case ',':
+            prevCard();
+            break;
+          case '.':
+            nextCard();
+            break;
+        }
+      });
+    }
+
     function nextCard() {
       if (words.length === 0) return;
+      
       if (shuffled) {
         currentIndex = Math.floor(Math.random() * words.length);
       } else {
         currentIndex = (currentIndex + 1) % words.length;
       }
-      saveState();
+      
       showCard();
     }
 
     function prevCard() {
       if (words.length === 0) return;
+      
       if (shuffled) {
         currentIndex = Math.floor(Math.random() * words.length);
       } else {
         currentIndex = (currentIndex - 1 + words.length) % words.length;
       }
-      saveState();
+      
       showCard();
     }
 
-    // jumps to the next card that is still unanswered; used after marking
-    function gotoNextUnanswered() {
+    function markAnswer(correct) {
+      // Update progress
+      if (!progress[currentIndex]) {
+        progress[currentIndex] = { attempts: 0, correct: 0, lastReviewed: null };
+      }
+      progress[currentIndex].attempts++;
+      if (correct) {
+        progress[currentIndex].correct++;
+      }
+      progress[currentIndex].lastReviewed = new Date().toISOString();
+      
+      // Update review mode progress
+      if (studyMode === 'review' && correct) {
+        window.reviewCorrectWords = (window.reviewCorrectWords || 0) + 1;
+        updateReviewProgress();
+      }
+      
+      // Remove from remaining
+      remaining = remaining.filter(i => i !== currentIndex);
+      
+      // Update study stats
+      studyStats.totalStudies++;
+      if (correct) {
+        studyStats.correctAnswers++;
+      } else {
+        studyStats.wrongAnswers++;
+      }
+      
+      // Calculate study time for test mode
+      if (studyMode === 'test' && studyStartTime) {
+        const studyTime = Math.floor((Date.now() - studyStartTime) / 1000);
+        studyStats.studyTime += studyTime;
+      }
+      
+      // Update daily stats
+      const today = new Date().toISOString().split('T')[0];
+      if (!studyStats.dailyStats[today]) {
+        studyStats.dailyStats[today] = { studies: 0, correct: 0, wrong: 0, time: 0 };
+      }
+      studyStats.dailyStats[today].studies++;
+      if (correct) {
+        studyStats.dailyStats[today].correct++;
+      } else {
+        studyStats.dailyStats[today].wrong++;
+      }
+      
+      // Update study days count
+      studyStats.studyDays = Object.keys(studyStats.dailyStats).length;
+      
+      // Add to recent activity
+      recentActivity.push({
+        index: currentIndex,
+        correct,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Keep only the last 50 activities
+      if (recentActivity.length > 50) {
+        recentActivity = recentActivity.slice(-50);
+      }
+      
+      // Update UI
+      updateProgress();
+      updateRecentActivity();
+      
+      // Save state
+      saveState();
+      
+      // Show feedback
+      showToast(correct ? translations[settings.language]['correct-feedback'] : translations[settings.language]['wrong-feedback'], correct ? 'success' : 'error');
+      
+      // Go to next card
+      gotoNextCard();
+    }
+
+    function gotoNextCard() {
       if (remaining.length === 0) {
-        alert('All cards answered');
+        if (studyMode === 'review') {
+          showToast('Review completed! All words have been reviewed.', 'success');
+          setTimeout(() => {
+            exitReviewMode();
+          }, 2000);
+        } else {
+          showToast(translations[settings.language]['all-cards-completed'], 'info');
+          
+          // Check if there are words to review
+          const reviewWords = getWordsToReview();
+          if (reviewWords.length > 0) {
+            // Show confirmation dialog for review
+            const reviewConfirm = confirm(translations[settings.language]['review-confirmation']);
+            if (reviewConfirm) {
+              showReviewModal();
+            }
+          }
+        }
         return;
       }
-      if (shuffled) {
-        const idx = Math.floor(Math.random() * remaining.length);
-        currentIndex = remaining[idx];
-      } else {
-        const pos = remaining.indexOf(currentIndex);
-        if (pos === -1 || pos === remaining.length - 1) {
-          currentIndex = remaining[0];
+      
+      // In review mode, we only want to show words from the review list
+      if (studyMode === 'review') {
+        if (shuffled) {
+          const randomIndex = Math.floor(Math.random() * remaining.length);
+          currentIndex = remaining[randomIndex];
         } else {
-          currentIndex = remaining[pos + 1];
+          // For review mode, just go to the next card in the remaining list
+          const currentPos = remaining.indexOf(currentIndex);
+          if (currentPos !== -1 && currentPos < remaining.length - 1) {
+            currentIndex = remaining[currentPos + 1];
+          } else {
+            currentIndex = remaining[0];
+          }
+        }
+      } else {
+        // Normal mode logic
+        if (shuffled) {
+          const randomIndex = Math.floor(Math.random() * remaining.length);
+          currentIndex = remaining[randomIndex];
+        } else {
+          // Find the next unanswered card
+          let nextIndex = -1;
+          for (let i = currentIndex + 1; i < words.length; i++) {
+            if (!progress[i] || progress[i].attempts === 0) {
+              nextIndex = i;
+              break;
+            }
+          }
+          
+          // If no next card found, start from the beginning
+          if (nextIndex === -1) {
+            for (let i = 0; i <= currentIndex; i++) {
+              if (!progress[i] || progress[i].attempts === 0) {
+                nextIndex = i;
+                break;
+              }
+            }
+          }
+          
+          currentIndex = nextIndex !== -1 ? nextIndex : currentIndex;
         }
       }
-      saveState();
+      
       showCard();
-    }
-
-    function buildGrid() {
-      const grid = document.getElementById("progressGrid");
-      const mobileGrid = document.getElementById("mobileProgressGrid");
-      if (grid) grid.innerHTML = "";
-      if (mobileGrid) mobileGrid.innerHTML = "";
-      words.forEach((_, i) => {
-        const div = document.createElement("div");
-        div.innerText = i + 1;
-        div.onclick = () => {
-          currentIndex = i;
-          showCard();
-        };
-        if (grid) grid.appendChild(div);
-        if (mobileGrid) {
-          const mobileDiv = div.cloneNode(true);
-          mobileDiv.onclick = div.onclick;
-          mobileGrid.appendChild(mobileDiv);
-        }
-      });
-      updateGrid();
-    }
-
-    function updateGrid() {
-      const grid = document.getElementById("progressGrid");
-      const mobileGrid = document.getElementById("mobileProgressGrid");
-      const gridChildren = grid ? grid.children : [];
-      const mobileChildren = mobileGrid ? mobileGrid.children : [];
-      progress.forEach((val, i) => {
-        if (gridChildren[i]) {
-          gridChildren[i].classList.remove("correct", "wrong");
-          if (val === true) gridChildren[i].classList.add("correct");
-          if (val === false) gridChildren[i].classList.add("wrong");
-        }
-        if (mobileChildren[i]) {
-          mobileChildren[i].classList.remove("correct", "wrong");
-          if (val === true) mobileChildren[i].classList.add("correct");
-          if (val === false) mobileChildren[i].classList.add("wrong");
-        }
-      });
-    }
-
-    function saveState() {
-      const state = { progress, currentIndex, shuffled };
-      localStorage.setItem('flashcard_state', JSON.stringify(state));
-    }
-
-    function resetProgress() {
-      progress = new Array(words.length).fill(null);
-      remaining = words.map((_, i) => i);
-      currentIndex = 0;
-      shuffled = false;
-      buildGrid();
-      updateGrid();
-      showCard();
-      saveState();
     }
 
     function shuffleToggle() {
       shuffled = !shuffled;
-      if (!shuffled) {
-        currentIndex = 0;
+      showToast(shuffled ? translations[settings.language]['shuffle-enabled'] : translations[settings.language]['shuffle-disabled'], 'info');
+      
+      // If shuffling, go to a random card
+      if (shuffled) {
+        currentIndex = Math.floor(Math.random() * words.length);
+        showCard();
       }
+      
       saveState();
     }
 
-    function toggleMobileProgress() {
-      const panel = document.getElementById('mobileProgress');
-      if (!panel) return;
-      panel.classList.toggle('open');
-      const btn = document.getElementById('toggleMobileProgress');
-      if (btn) btn.setAttribute('aria-expanded', panel.classList.contains('open'));
-    }
-
-    function updateDarkToggleText() {
-      const btn = document.getElementById('toggleDark');
-      if (!btn) return;
-      btn.textContent = document.body.classList.contains('dark')
-        ? 'Light Mode'
-        : 'Dark Mode';
+    function resetProgress() {
+      if (confirm('确定要重置所有学习进度吗？此操作无法撤销。')) {
+        progress = new Array(words.length).fill(null);
+        remaining = Array.from({ length: words.length }, (_, i) => i);
+        currentIndex = 0;
+        shuffled = false;
+        
+        // Reset study stats
+        studyStats = {
+          totalStudies: 0,
+          correctAnswers: 0,
+          wrongAnswers: 0,
+          studyTime: 0,
+          lastStudyDate: null,
+          studyDays: 0,
+          dailyStats: {}
+        };
+        
+        // Clear recent activity
+        recentActivity = [];
+        
+        // Update UI
+        updateProgress();
+        updateRecentActivity();
+        buildWordGrid();
+        showCard();
+        
+        // Save state
+        saveState();
+        
+        showToast(translations[settings.language]['progress-reset'], 'info');
+      }
     }
 
     function toggleDarkMode() {
-      const isDark = document.body.classList.toggle('dark');
-      localStorage.setItem('darkMode', isDark);
-      updateDarkToggleText();
-    }
-
-    function loadDarkMode() {
-      const dark = localStorage.getItem('darkMode') === 'true';
-      if (dark) document.body.classList.add('dark');
-      updateDarkToggleText();
-    }
-
-    // key bindings
-    document.addEventListener('keydown', e => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      switch (e.key) {
-        case ' ':
-          flipCard();
-          e.preventDefault();
-          break;
-        case 'ArrowRight':
-          markAnswer(true);
-          break;
-        case 'ArrowLeft':
-          markAnswer(false);
-          break;
-        case ',':
-          prevCard();
-          break;
-        case '.':
-          nextCard();
-          break;
+      document.body.classList.toggle('dark');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+      
+      // Force reflow to ensure all styles are applied correctly
+      document.body.offsetHeight;
+      
+      // Update chart colors if stats modal is open
+      if (!document.getElementById('stats-modal').classList.contains('hidden')) {
+        initCharts();
       }
-    });
+    }
+    
+    function showReviewModal() {
+      const reviewWords = getWordsToReview();
+      const container = document.getElementById('review-words-container');
+      container.innerHTML = '';
+      
+      if (reviewWords.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 italic">${translations[settings.language]['no-words-to-review']}</p>`;
+        document.getElementById('start-review-mode').disabled = true;
+        document.getElementById('start-review-mode').classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        reviewWords.forEach((word, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+          div.innerHTML = `
+            <div>
+              <span class="text-xl font-serif text-primary dark:text-white">${word.hanzi}</span>
+              <span class="ml-2 text-gray-500 dark:text-gray-400">${word.pinyin}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-gray-900 dark:text-white">${word.meaning}</span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">${word.pos}</span>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+        document.getElementById('start-review-mode').disabled = false;
+        document.getElementById('start-review-mode').classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+      
+      document.getElementById('review-modal').classList.remove('hidden');
+    }
+    
+    function hideReviewModal() {
+      document.getElementById('review-modal').classList.add('hidden');
+    }
+    
+    function getWordsToReview() {
+      const reviewWords = [];
+      for (let i = 0; i < words.length; i++) {
+        if (progress[i] && progress[i].attempts > 0 && progress[i].correct === 0) {
+          reviewWords.push(words[i]);
+        }
+      }
+      return reviewWords;
+    }
+    
+    function startReviewMode() {
+      hideReviewModal();
+      studyMode = 'review';
+      
+      // Filter words to review (only words marked incorrect)
+      const reviewIndices = [];
+      for (let i = 0; i < words.length; i++) {
+        if (progress[i] && progress[i].attempts > 0 && progress[i].correct === 0) {
+          reviewIndices.push(i);
+        }
+      }
+      
+      if (reviewIndices.length === 0) {
+        showToast('No words to review.', 'info');
+        studyMode = 'standard';
+        return;
+      }
+      
+      // Set up review mode
+      window.reviewOriginalRemaining = [...remaining]; // Save original remaining
+      window.reviewOriginalIndex = currentIndex; // Save original index
+      window.reviewTotalWords = reviewIndices.length;
+      window.reviewCorrectWords = 0;
+      
+      remaining = [...reviewIndices];
+      if (shuffled) {
+        remaining.sort(() => Math.random() - 0.5);
+      }
+      currentIndex = remaining[0];
+      
+      // Switch to review mode UI
+      document.getElementById('normal-modes-container').classList.add('hidden');
+      document.getElementById('review-mode-container').classList.remove('hidden');
+      
+      // Update review progress
+      updateReviewProgress();
+      
+      showCard();
+      updateProgress();
+      
+      showToast(translations[settings.language]['review-mode'] + ' started with ' + remaining.length + ' words', 'info');
+    }
+    
+    function exitReviewMode() {
+      // Restore original state
+      studyMode = 'standard';
+      remaining = [...window.reviewOriginalRemaining || remaining];
+      currentIndex = window.reviewOriginalIndex || currentIndex;
+      
+      // Switch back to normal UI
+      document.getElementById('normal-modes-container').classList.remove('hidden');
+      document.getElementById('review-mode-container').classList.add('hidden');
+      
+      // Update UI
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.remove('bg-primary', 'text-white');
+        b.classList.add('bg-gray-200', 'dark:bg-gray-700');
+      });
+      const standardBtn = document.querySelector('[data-mode="standard"]');
+      if (standardBtn) {
+        standardBtn.classList.add('bg-primary', 'text-white');
+        standardBtn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+      }
+      
+      showCard();
+      updateProgress();
+      
+      showToast('Returned to study mode', 'info');
+    }
+    
+    function updateReviewProgress() {
+      const correct = window.reviewCorrectWords || 0;
+      const total = window.reviewTotalWords || 0;
+      const remaining = total - correct;
+      const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+      
+      document.getElementById('review-progress-text').textContent = `${correct} / ${total}`;
+      document.getElementById('review-progress-bar').style.width = `${percentage}%`;
+      document.getElementById('review-correct-count').textContent = correct;
+      document.getElementById('review-remaining-count').textContent = remaining;
+    }
 
-    init();
+    function showStatsModal() {
+      document.getElementById('stats-modal').classList.remove('hidden');
+      initCharts();
+      updateStatsDisplay();
+    }
 
+    function hideStatsModal() {
+      document.getElementById('stats-modal').classList.add('hidden');
+      
+      // Destroy charts to prevent memory leaks
+      if (charts.progress) charts.progress.destroy();
+      if (charts.accuracy) charts.accuracy.destroy();
+      if (charts.time) charts.time.destroy();
+      charts = {};
+    }
+
+    function showSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function hideSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function saveUserSettings() {
+      settings.cardAnimation = document.getElementById('card-animation').checked;
+      settings.defaultStudyMode = document.getElementById('study-mode').value;
+      settings.cardSpeed = parseInt(document.getElementById('card-speed').value);
+      
+      // Apply card speed
+      document.getElementById('card-inner').style.transitionDuration = `${settings.cardSpeed}ms`;
+      
+      // Save settings
+      localStorage.setItem('flashcard_settings', JSON.stringify(settings));
+      
+      // Update study mode if changed
+      if (settings.defaultStudyMode !== studyMode) {
+        studyMode = settings.defaultStudyMode;
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+          if (btn.dataset.mode === studyMode) {
+            btn.classList.add('bg-primary', 'text-white');
+            btn.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+          } else {
+            btn.classList.remove('bg-primary', 'text-white');
+            btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+          }
+        });
+        showCard();
+      }
+      
+      hideSettingsModal();
+      showToast(translations[settings.language]['settings-saved'], 'success');
+    }
+
+    // ==========================
+    // STATISTICS AND CHARTS
+    // ==========================
+
+    function initCharts() {
+      // Progress Chart
+      const progressCtx = document.getElementById('progress-chart').getContext('2d');
+      const knownWords = progress.filter(val => val === true).length;
+      const unknownWords = progress.filter(val => val === false).length;
+      const remainingWords = words.length - knownWords - unknownWords;
+      
+      charts.progress = new Chart(progressCtx, {
+        type: 'doughnut',
+        data: {
+          labels: settings.language === 'en' ? ['Mastered', 'Need Review', 'Not Studied'] : ['已掌握', '需复习', '未学习'],
+          datasets: [{
+            data: [knownWords, unknownWords, remainingWords],
+            backgroundColor: [
+              '#10b981', // green
+              '#ef4444', // red
+              '#d1d5db'  // gray
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: document.body.classList.contains('dark') ? '#e5e7eb' : '#374151'
+              }
+            }
+          }
+        }
+      });
+      
+      // Accuracy Chart
+      const accuracyCtx = document.getElementById('accuracy-chart').getContext('2d');
+      const totalAnswers = studyStats.correctAnswers + studyStats.wrongAnswers;
+      const accuracy = totalAnswers > 0 
+        ? Math.round((studyStats.correctAnswers / totalAnswers) * 100) 
+        : 0;
+      
+      charts.accuracy = new Chart(accuracyCtx, {
+        type: 'doughnut',
+        data: {
+          labels: settings.language === 'en' ? ['Correct', 'Wrong'] : ['正确', '错误'],
+          datasets: [{
+            data: [studyStats.correctAnswers, studyStats.wrongAnswers],
+            backgroundColor: [
+              '#10b981', // green
+              '#ef4444'  // red
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: document.body.classList.contains('dark') ? '#e5e7eb' : '#374151'
+              }
+            },
+            tooltip: {
+              callbacks: {
+                footer: () => [`准确率: ${accuracy}%`]
+              }
+            }
+          }
+        }
+      });
+      
+      // Study Time Chart
+      const timeCtx = document.getElementById('time-chart').getContext('2d');
+      
+      // Get last 7 days of data
+      const days = [];
+      const studyData = [];
+      const today = new Date();
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayName = date.toLocaleDateString('zh-CN', { weekday: 'short' });
+        
+        days.push(dayName);
+        studyData.push(studyStats.dailyStats[dateStr] ? studyStats.dailyStats[dateStr].studies : 0);
+      }
+      
+      charts.time = new Chart(timeCtx, {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{
+            label: settings.language === 'en' ? 'Study Sessions' : '学习次数',
+            data: studyData,
+            backgroundColor: '#3b82f6', // blue
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+                color: document.body.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+              },
+              grid: {
+                color: document.body.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                color: document.body.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+              },
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    function updateStatsDisplay() {
+      // Calculate average accuracy
+      const totalAnswers = studyStats.correctAnswers + studyStats.wrongAnswers;
+      const avgAccuracy = totalAnswers > 0 
+        ? Math.round((studyStats.correctAnswers / totalAnswers) * 100) 
+        : 0;
+      
+      // Get today's studies
+      const today = new Date().toISOString().split('T')[0];
+      const todayStudies = studyStats.dailyStats[today] ? studyStats.dailyStats[today].studies : 0;
+      
+      // Update stats display
+      document.getElementById('total-studies').textContent = studyStats.totalStudies;
+      document.getElementById('avg-accuracy').textContent = `${avgAccuracy}%`;
+      document.getElementById('today-studies').textContent = todayStudies;
+      document.getElementById('study-days').textContent = studyStats.studyDays;
+    }
+
+    // ==========================
+    // INITIALIZE APP
+    // ==========================
+
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 
-</body>
 
-</html>
+</body></html>
