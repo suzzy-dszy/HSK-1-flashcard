@@ -123,6 +123,19 @@
       .btn-primary:hover {
         background-color: rgb(37 99 235);
       }
+      /* Mobile modal optimizations */
+      @media (max-width: 640px) {
+        body.modal-open {
+          overflow: hidden;
+          height: 100vh;
+        }
+        #review-modal > div,
+        #stats-modal > div,
+        #settings-modal > div {
+          margin: auto;
+          max-height: calc(100vh - 32px);
+        }
+      }
     }
   </style>
   <style>
@@ -398,8 +411,9 @@
   </div>
 
   <!-- Statistics Modal -->
-  <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  <div id="stats-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4 sm:p-0">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="statistics">Statistics</h2>
         <button id="close-stats" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -451,22 +465,26 @@
   </div>
 
   <!-- Review Words Modal -->
-  <div id="review-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="words-to-review">Words to Review</h2>
-        <button id="close-review" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-          <i class="fa fa-times text-xl" aria-hidden="true"></i>
+  <div id="review-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4 sm:p-0">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
+      <div class="flex justify-between items-center mb-4 sm:mb-6 flex-shrink-0">
+        <h2 class="text-xl sm:text-2xl font-bold text-primary dark:text-secondary" data-lang="words-to-review">Words to
+          Review</h2>
+        <button id="close-review"
+          class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex-shrink-0 ml-2">
+          <i class="fa fa-times text-lg sm:text-xl" aria-hidden="true"></i>
         </button>
       </div>
 
-      <div id="review-words-container" class="space-y-4">
+      <div id="review-words-container" class="space-y-2 sm:space-y-4 flex-grow overflow-y-auto">
         <!-- Review words will be populated by JavaScript -->
       </div>
 
-      <div class="mt-6 text-center">
+      <div class="mt-4 sm:mt-6 text-center flex-shrink-0">
         <button id="start-review-mode"
-          class="px-6 py-3 bg-gradient-blue text-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-blue text-white rounded-xl shadow-md hover:shadow-lg transition-shadow text-sm sm:text-base">
           <span data-lang="start-review-mode">Start Review Mode</span>
         </button>
       </div>
@@ -474,8 +492,9 @@
   </div>
 
   <!-- Settings Modal -->
-  <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
+  <div id="settings-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4 sm:p-0">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 max-w-md w-full">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-primary dark:text-secondary" data-lang="settings">Settings</h2>
         <button id="close-settings"
@@ -1875,15 +1894,15 @@
       } else {
         reviewWords.forEach((word, index) => {
           const div = document.createElement('div');
-          div.className = 'flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+          div.className = 'flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg gap-2 sm:gap-0';
           div.innerHTML = `
-            <div>
-              <span class="text-xl font-serif text-primary dark:text-white">${word.hanzi}</span>
-              <span class="ml-2 text-gray-500 dark:text-gray-400">${word.pinyin}</span>
+            <div class="flex items-baseline gap-1 min-w-0">
+              <span class="text-lg sm:text-xl font-serif text-primary dark:text-white flex-shrink-0">${word.hanzi}</span>
+              <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">${word.pinyin}</span>
             </div>
-            <div class="text-right">
-              <span class="text-gray-900 dark:text-white">${word.meaning}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">${word.pos}</span>
+            <div class="text-right sm:text-right flex-shrink-0">
+              <span class="text-sm sm:text-base text-gray-900 dark:text-white block">${word.meaning}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">${word.pos}</span>
             </div>
           `;
           container.appendChild(div);
@@ -1902,10 +1921,12 @@
     // Modal helper functions
     function showModal(modalId) {
       document.getElementById(modalId).classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
     }
 
     function hideModal(modalId) {
       document.getElementById(modalId).classList.add('hidden');
+      document.body.style.overflow = 'auto';
     }
 
     function toggleModal(modalId) {
